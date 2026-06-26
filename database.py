@@ -2,7 +2,14 @@
 database.py - Veritabanı işlemleri
 SQLite kullanarak öğrenci verilerini yönetir.
 """
+import os
+import psycopg2
 
+def get_db():
+    # Artık sistemdeki DATABASE_URL değişkenini kullanıyoruz
+    db_url = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(db_url)
+    return conn
 import sqlite3
 import os
 from datetime import datetime
