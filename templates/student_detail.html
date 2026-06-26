@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} - Öğrenci Takip Sistemi{% endblock %}
+{% block topbar_title %}👤 {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="student-detail">
+
+    <!-- Öğrenci Profil Kartı -->
+    <div class="profile-card">
+        <div class="profile-avatar-wrap">
+            <div class="profile-avatar" style="background: {{ student.avatar_color }};">
+                {{ student.name[0].upper() }}
+            </div>
+        </div>
+        <div class="profile-info">
+            <h1 class="profile-name">{{ student.name }}</h1>
+            <div class="profile-level">
+                <span class="level-badge level-badge-lg" style="background: {{ student.level_info.color }}20; color: {{ student.level_info.color }}; border-color: {{ student.level_info.color }}50;">
+                    {{ student.level_info.icon }} {{ student.level_info.label }}
+                </span>
+            </div>
+            {% if student.notes %}
+            <p class="profile-notes">📝 {{ student.notes }}</p>
+            {% endif %}
+        </div>
+        <div class="profile-actions">
+            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline btn-sm" id="edit-profile-btn">✏️ Düzenle</a>
+            <button onclick="confirmDelete({{ student.id }}, '{{ student.name }}')" class="btn btn-danger btn-sm" id="delete-profile-btn">🗑️ Sil</button>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="detail-stats">
+        <div class="dstat-card">
+            <div class="dstat-icon">🔤</div>
+            <div class="dstat-value">{{ student.stats.letters_learned }}</div>
+            <div class="dstat-label">Öğrenilen Harf</div>
+        </div>
+        <div class="dstat-card">
+            <div class="dstat-icon">⚠️</div>
+            <div class="dstat-value">{{ student.stats.letters_partial }}</div>
+            <div class="dstat-label">Kısmen Öğrenilen</div>
+        </div>
+        <div class="dstat-card">
+            <div class="dstat-icon">❌</div>
+            <div class="dstat-value">{{ student.stats.letters_not_learned }}</div>
+            <div class="dstat-label">Öğrenilmemiş</div>
+        </div>
+        <div class="dstat-card">
+            <div class="dstat-icon">📖</div>
+            <div class="dstat-value">{{ student.stats.last_wpm }}</div>
+            <div class="dstat-label">Son Okuma (k/dk)</div>
+        </div>
+    </div>
+
+    <!-- Harf İlerlemesi -->
+    <div class="detail-section">
+        <div class="section-card">
+            <div class="section-card-header">
+                <h2>🔤 Harf İlerlemesi</h2>
+                <a href="{{ url_for('letter_tracking', student_id=student.id) }}" class="btn btn-primary btn-sm" id="update-letters-btn">Güncelle</a>
+            </div>
+            
+            <div class="progress-overview">
+                <div class="progress-circle-wrap">
+                    <div class="progress-circle" id="letterProgressCircle" data-progress="{{ student.stats.letter_progress }}">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="circle-bg" cx="50" cy="50" r="40"/>
+                            <circle class="circle-fill" cx="50" cy="50" r="40"
+                                    stroke-dasharray="{{ student.stats.letter_progress * 2.51327 }} 251.327"
+                                    stroke="{{ student.level_info.color }}"/>
+                        </svg>
+                        <div class="circle-text">{{ student.stats.letter_progress }}%</div>
+                    </div>
+                </div>
+                <div class="progress-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #51CF66;"></span>
+                        <span>Öğrenildi: {{ student.stats.letters_learned }}</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #FFD43B;"></span>
+                        <span>Kısmen: {{ student.stats.letters_partial }}</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #FF6B6B;"></span>
+                        <span>Öğrenilmedi: {{ student.stats.letters_not_learned }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Harf Izgara -->
+            <div class="letter-mini-grid">
+                {% for lt in letters %}
+                <div class="letter-mini {{ lt.status }}" title="{{ lt.letter }} - {% if lt.status == 'learned' %}Öğrenildi{% elif lt.status == 'partial' %}Kısmen{% else %}Öğrenilmedi{% endif %}">
+                    {{ lt.letter }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Okuma Hızı -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h2>📖 Okuma Hızı</h2>
+                <a href="{{ url_for('reading_speed', student_id=student.id) }}" class="btn btn-primary btn-sm" id="add-reading-btn">Kayıt Ekle</a>
+            </div>
+
+            {% if chart_data.labels %}
+            <div class="chart-container">
+                <canvas id="readingChart"></canvas>
+            </div>
+            <div class="reading-records-list">
+                {% for record in reading_records[:5] %}
+                <div class="reading-record-item">
+                    <div class="record-date">📅 {{ record.recorded_at[:10] if record.recorded_at else '-' }}</div>
+                    <div class="record-wpm">
+                        <span class="wpm-number">{{ record.words_per_minute }}</span>
+                        <span class="wpm-unit">k/dk</span>
+                    </div>
+                    {% if record.notes %}
+                    <div class="record-notes">{{ record.notes }}</div>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('delete_reading_record', record_id=record.id) }}" style="display:inline;" onsubmit="return confirm('Bu kaydı silmek istediğinizden emin misiniz?')">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <button type="submit" class="btn-icon btn-delete btn-xs" title="Sil">🗑️</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-mini">
+                <p>📊 Henüz okuma kaydı yok</p>
+                <a href="{{ url_for('reading_speed', student_id=student.id) }}" class="btn btn-outline btn-sm" id="first-reading-btn">İlk kaydı ekle →</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI Rapor Bölümü -->
+    <div class="ai-section">
+        <div class="ai-header">
+            <div class="ai-icon">🤖</div>
+            <div>
+                <h2>Yapay Zeka Raporu</h2>
+                <p>Google Gemini AI ile kişiselleştirilmiş rapor oluşturun</p>
+            </div>
+            <form method="POST" action="{{ url_for('generate_report', student_id=student.id) }}">
+                <button type="submit" class="btn btn-ai" id="generate-report-btn">
+                    ✨ Rapor Oluştur
+                </button>
+            </form>
+        </div>
+
+        {% if reports %}
+        <div class="reports-list">
+            <h3>📄 Geçmiş Raporlar</h3>
+            {% for report in reports %}
+            <div class="report-item">
+                <div class="report-meta">
+                    <span class="report-date">📅 {{ report.generated_at[:16].replace('T', ' ') if 'T' in report.generated_at else report.generated_at[:16] }}</span>
+                </div>
+                <div class="report-preview">{{ report.report_text[:150] }}...</div>
+                <div class="report-actions">
+                    <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-outline btn-sm" id="view-report-{{ report.id }}">👁️ Görüntüle</a>
+                    <form method="POST" action="{{ url_for('delete_report', report_id=report.id) }}" style="display:inline;" onsubmit="return confirm('Bu raporu silmek istediğinizden emin misiniz?')">
+                        <button type="submit" class="btn btn-danger btn-sm" id="del-report-{{ report.id }}">🗑️</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Silme Formu -->
+<form id="deleteForm" method="POST" style="display: none;"></form>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if chart_data.labels %}
+const ctx = document.getElementById('readingChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ chart_data.labels | tojson }},
+        datasets: [{
+            label: 'Kelime/Dakika',
+            data: {{ chart_data.values | tojson }},
+            borderColor: '{{ student.level_info.color }}',
+            backgroundColor: '{{ student.level_info.color }}20',
+            borderWidth: 3,
+            pointRadius: 6,
+            pointBackgroundColor: '{{ student.level_info.color }}',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1a1b2e',
+                titleColor: '#fff',
+                bodyColor: '#a0aec0',
+                borderColor: '{{ student.level_info.color }}',
+                borderWidth: 1,
+                callbacks: {
+                    label: ctx => ctx.raw + ' kelime/dakika'
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: '#ffffff10' },
+                ticks: { color: '#a0aec0' }
+            },
+            y: {
+                grid: { color: '#ffffff10' },
+                ticks: { color: '#a0aec0' },
+                beginAtZero: true
+            }
+        }
+    }
+});
+{% endif %}
+
+function confirmDelete(id, name) {
+    if (confirm(`"${name}" adlı öğrenciyi silmek istediğinizden emin misiniz?\nBu işlem geri alınamaz!`)) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/ogrenci/${id}/sil`;
+        form.method = 'POST';
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

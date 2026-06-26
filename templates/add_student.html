@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% set is_edit = student is defined and student %}
+{% block title %}{% if is_edit %}{{ student.name }} Düzenle{% else %}Öğrenci Ekle{% endif %} - Öğrenci Takip Sistemi{% endblock %}
+{% block topbar_title %}{% if is_edit %}✏️ Öğrenci Düzenle{% else %}➕ Öğrenci Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-container">
+        <div class="form-header">
+            <div class="form-header-icon">{% if is_edit %}✏️{% else %}🎒{% endif %}</div>
+            <h1>{% if is_edit %}{{ student.name }} Düzenle{% else %}Yeni Öğrenci Ekle{% endif %}</h1>
+            <p>{% if is_edit %}Öğrenci bilgilerini güncelleyin{% else %}Öğrenci bilgilerini doldurun{% endif %}</p>
+        </div>
+
+        <form method="POST" class="student-form" id="studentForm">
+            <!-- Avatar Renk Seçici -->
+            <div class="form-group">
+                <label class="form-label">Avatar Rengi</label>
+                <div class="avatar-preview-row">
+                    <div class="avatar-preview" id="avatarPreview" style="background: {% if is_edit %}{{ student.avatar_color }}{% else %}#4ECDC4{% endif %};">
+                        <span id="avatarLetter">{% if is_edit %}{{ student.name[0].upper() }}{% else %}A{% endif %}</span>
+                    </div>
+                    <div class="color-picker-grid">
+                        {% for color in avatar_colors %}
+                        <button type="button" class="color-dot {% if is_edit and student.avatar_color == color %}selected{% elif not is_edit and loop.first %}selected{% endif %}"
+                                style="background: {{ color }};"
+                                onclick="selectColor('{{ color }}')"
+                                id="color-{{ loop.index }}"
+                                title="{{ color }}">
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <input type="hidden" name="avatar_color" id="avatarColorInput" value="{% if is_edit %}{{ student.avatar_color }}{% else %}#4ECDC4{% endif %}">
+            </div>
+
+            <!-- Ad Soyad -->
+            <div class="form-group">
+                <label for="name" class="form-label">Ad Soyad <span class="required">*</span></label>
+                <input type="text"
+                       id="name"
+                       name="name"
+                       class="form-input"
+                       placeholder="Örn: Ayşe Yılmaz"
+                       value="{% if is_edit %}{{ student.name }}{% endif %}"
+                       required
+                       oninput="updateAvatarLetter(this.value)">
+            </div>
+
+            <!-- Öğrenim Seviyesi -->
+            <div class="form-group">
+                <label class="form-label">Öğrenim Seviyesi</label>
+                <div class="level-selector" role="group" aria-label="Öğrenim seviyesi seçimi">
+                    {% for key, level in levels.items() %}
+                    <label class="level-option" id="level-option-{{ key }}">
+                        <input type="radio" name="level" value="{{ key }}"
+                               {% if is_edit and student.level == key %}checked{% elif not is_edit and key == 'baslangic' %}checked{% endif %}>
+                        <div class="level-card" style="--level-color: {{ level.color }};">
+                            <span class="level-icon">{{ level.icon }}</span>
+                            <span class="level-name">{{ level.label }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Notlar -->
+            <div class="form-group">
+                <label for="notes" class="form-label">Öğretmen Notları</label>
+                <textarea id="notes"
+                          name="notes"
+                          class="form-textarea"
+                          placeholder="Öğrenci hakkında genel notlar, gözlemler..."
+                          rows="3">{% if is_edit %}{{ student.notes }}{% endif %}</textarea>
+            </div>
+
+            <!-- Butonlar -->
+            <div class="form-actions">
+                <a href="{{ url_for('student_list') }}" class="btn btn-outline" id="cancel-btn">İptal</a>
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    {% if is_edit %}✅ Güncelle{% else %}➕ Öğrenci Ekle{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectColor(color) {
+    document.getElementById('avatarColorInput').value = color;
+    document.getElementById('avatarPreview').style.background = color;
+    document.querySelectorAll('.color-dot').forEach(dot => {
+        dot.classList.toggle('selected', dot.style.background === color || dot.title === color);
+    });
+}
+
+function updateAvatarLetter(value) {
+    const letter = value.trim() ? value.trim()[0].toUpperCase() : 'A';
+    document.getElementById('avatarLetter').textContent = letter;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} - Okuma Hızı{% endblock %}
+{% block topbar_title %}📖 Okuma Hızı - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="reading-page">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">📖 Okuma Hızı Takibi</h1>
+            <p class="page-subtitle">
+                <span class="student-chip" style="background: {{ student.avatar_color }}20; border-color: {{ student.avatar_color }}40;">
+                    <span class="chip-avatar" style="background: {{ student.avatar_color }};">{{ student.name[0].upper() }}</span>
+                    {{ student.name }}
+                </span>
+            </p>
+        </div>
+        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline" id="back-reading">← Geri</a>
+    </div>
+
+    <div class="reading-layout">
+
+        <!-- Sol: Kayıt Formu -->
+        <div class="reading-form-card">
+            <h2>📝 Yeni Ölçüm Ekle</h2>
+            <p class="form-desc">1 dakika içinde kaç kelime okuduğunu girin</p>
+
+            <!-- Dakika Sayacı -->
+            <div class="timer-section">
+                <div class="timer-display" id="timerDisplay">01:00</div>
+                <div class="timer-controls">
+                    <button type="button" id="startTimer" class="btn btn-timer-start" onclick="startTimer()">▶ Başlat</button>
+                    <button type="button" id="resetTimer" class="btn btn-timer-reset" onclick="resetTimer()" disabled>⟳ Sıfırla</button>
+                </div>
+                <div class="timer-hint">Zamanlayıcı ile 1 dakika okuma süresi ölçebilirsiniz</div>
+            </div>
+
+            <form method="POST" class="reading-form" id="readingForm">
+                <div class="form-group">
+                    <label for="words_per_minute" class="form-label">
+                        Dakikada Kelime Sayısı <span class="required">*</span>
+                    </label>
+                    <div class="wpm-input-wrap">
+                        <input type="number"
+                               id="words_per_minute"
+                               name="words_per_minute"
+                               class="form-input wpm-input"
+                               placeholder="Örn: 25"
+                               min="1"
+                               max="300"
+                               required>
+                        <span class="wpm-unit-label">kelime/dk</span>
+                    </div>
+                </div>
+
+                <!-- Okuma Hızı Değerlendirmesi -->
+                <div class="wpm-guide">
+                    <div class="wpm-guide-item" style="border-color: #FF6B6B;">
+                        <span class="wpm-range">1-9</span>
+                        <span>Başlangıç</span>
+                    </div>
+                    <div class="wpm-guide-item" style="border-color: #FFA94D;">
+                        <span class="wpm-range">10-19</span>
+                        <span>Gelişiyor</span>
+                    </div>
+                    <div class="wpm-guide-item" style="border-color: #FFD43B;">
+                        <span class="wpm-range">20-29</span>
+                        <span>Orta</span>
+                    </div>
+                    <div class="wpm-guide-item" style="border-color: #51CF66;">
+                        <span class="wpm-range">30-44</span>
+                        <span>İyi</span>
+                    </div>
+                    <div class="wpm-guide-item" style="border-color: #339AF0;">
+                        <span class="wpm-range">45+</span>
+                        <span>Mükemmel</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reading_text" class="form-label">Okunan Metin (Opsiyonel)</label>
+                    <input type="text"
+                           id="reading_text"
+                           name="reading_text"
+                           class="form-input"
+                           placeholder="Örn: Masal kitabı sayfa 5-7">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes" class="form-label">Notlar (Opsiyonel)</label>
+                    <textarea id="notes"
+                              name="notes"
+                              class="form-textarea"
+                              rows="2"
+                              placeholder="Gözlemler, özel notlar..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="save-reading-btn">
+                    💾 Kaydı Ekle
+                </button>
+            </form>
+        </div>
+
+        <!-- Sağ: Geçmiş Kayıtlar -->
+        <div class="reading-history-card">
+            <h2>📊 Okuma Geçmişi</h2>
+
+            {% if records %}
+            <div class="records-list" id="recordsList">
+                {% for record in records %}
+                <div class="record-card">
+                    <div class="record-header">
+                        <div class="record-wpm-display {% if record.words_per_minute >= 45 %}high{% elif record.words_per_minute >= 30 %}good{% elif record.words_per_minute >= 20 %}mid{% else %}low{% endif %}">
+                            <span class="record-wpm-num">{{ record.words_per_minute }}</span>
+                            <span class="record-wpm-lbl">k/dk</span>
+                        </div>
+                        <div class="record-info">
+                            <div class="record-date">📅 {{ record.recorded_at[:10] if record.recorded_at else '-' }}</div>
+                            {% if record.reading_text %}
+                            <div class="record-text">📄 {{ record.reading_text }}</div>
+                            {% endif %}
+                            {% if record.notes %}
+                            <div class="record-note">📝 {{ record.notes }}</div>
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('delete_reading_record', record_id=record.id) }}" onsubmit="return confirm('Bu kaydı silmek istediğinizden emin misiniz?')">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <button type="submit" class="btn-icon btn-delete btn-xs" title="Sil" id="del-rec-{{ record.id }}">🗑️</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-mini">
+                <div class="empty-icon-sm">📊</div>
+                <p>Henüz okuma kaydı bulunmuyor</p>
+                <p class="empty-hint">İlk ölçümü eklemek için formu doldurun</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let timerInterval = null;
+let seconds = 60;
+let running = false;
+
+function updateDisplay() {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+}
+
+function startTimer() {
+    if (running) return;
+    running = true;
+    document.getElementById('startTimer').disabled = true;
+    document.getElementById('resetTimer').disabled = false;
+    document.getElementById('timerDisplay').classList.add('running');
+
+    timerInterval = setInterval(() => {
+        seconds--;
+        updateDisplay();
+        if (seconds <= 0) {
+            clearInterval(timerInterval);
+            running = false;
+            document.getElementById('timerDisplay').classList.remove('running');
+            document.getElementById('timerDisplay').classList.add('done');
+            document.getElementById('timerDisplay').textContent = '✅ Süre Doldu!';
+            document.getElementById('words_per_minute').focus();
+        }
+    }, 1000);
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    running = false;
+    seconds = 60;
+    updateDisplay();
+    document.getElementById('startTimer').disabled = false;
+    document.getElementById('resetTimer').disabled = true;
+    document.getElementById('timerDisplay').classList.remove('running', 'done');
+}
+</script>
+{% endblock %}

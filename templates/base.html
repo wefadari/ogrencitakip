@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="1. Sınıf Öğrenci Takip ve Yapay Zeka Rapor Sistemi - İlkokul öğretmenleri için geliştirilmiş modern takip platformu">
+    <title>{% block title %}Öğrenci Takip Sistemi{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <span class="logo-icon">📚</span>
+                <div class="logo-text">
+                    <span class="logo-title">EduTrack</span>
+                    <span class="logo-sub">1. Sınıf Takip</span>
+                </div>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menüyü kapat">✕</button>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" id="nav-dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student_list') }}" class="nav-link {% if request.endpoint in ['student_list', 'student_detail', 'edit_student'] %}active{% endif %}" id="nav-students">
+                    <span class="nav-icon">👨‍🎓</span>
+                    <span class="nav-text">Öğrenciler</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('add_student') }}" class="nav-link {% if request.endpoint == 'add_student' %}active{% endif %}" id="nav-add">
+                    <span class="nav-icon">➕</span>
+                    <span class="nav-text">Öğrenci Ekle</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-info">
+                <span class="info-icon">🤖</span>
+                <div>
+                    <div class="info-title">Yapay Zeka</div>
+                    <div class="info-sub">Google Gemini</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Topbar -->
+        <header class="topbar">
+            <button class="menu-btn" id="menuBtn" aria-label="Menüyü aç">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="topbar-title">{% block topbar_title %}📚 Öğrenci Takip Sistemi{% endblock %}</div>
+            <div class="topbar-actions">
+                <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-sm" id="topbar-add-student">
+                    <span>+</span> Öğrenci Ekle
+                </a>
+            </div>
+        </header>
+
+        <!-- Flash Mesajları -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button onclick="this.parentElement.remove()" class="flash-close">✕</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

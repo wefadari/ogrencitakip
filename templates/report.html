@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} - Rapor{% endblock %}
+{% block topbar_title %}📄 Öğrenci Raporu{% endblock %}
+
+{% block content %}
+<div class="report-page">
+
+    <div class="report-header-bar">
+        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline" id="back-report">← Öğrenci Profiline Dön</a>
+        <button onclick="window.print()" class="btn btn-primary" id="print-report-btn">🖨️ Yazdır / PDF</button>
+    </div>
+
+    <div class="report-container" id="reportContent">
+        <!-- Rapor Başlığı -->
+        <div class="report-title-section">
+            <div class="report-school-header">
+                <div class="report-school-icon">🏫</div>
+                <div>
+                    <div class="report-school-name">İlkokul 1. Sınıf</div>
+                    <div class="report-subtitle">Bireysel Öğrenci Gelişim Raporu</div>
+                </div>
+                <div class="report-ai-badge">🤖 AI ile oluşturuldu</div>
+            </div>
+        </div>
+
+        <!-- Öğrenci Bilgileri -->
+        <div class="report-student-info">
+            <div class="report-avatar" style="background: {{ student.avatar_color }};">
+                {{ student.name[0].upper() }}
+            </div>
+            <div class="report-student-details">
+                <h1 class="report-student-name">{{ student.name }}</h1>
+                <div class="report-date">📅 Rapor Tarihi: {{ report.generated_at[:10] if report.generated_at else '' }}</div>
+                <div class="report-level">
+                    <span class="level-badge" style="background: {{ student.level_info.color }}20; color: {{ student.level_info.color }}; border-color: {{ student.level_info.color }}40;">
+                        {{ student.level_info.icon }} {{ student.level_info.label }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapor İçeriği -->
+        <div class="report-body">
+            <div class="report-text" id="reportText">
+                {{ report.report_text | replace('\n', '<br>') | safe }}
+            </div>
+        </div>
+
+        <!-- Rapor Altbilgi -->
+        <div class="report-footer">
+            <div class="report-footer-left">
+                <span>📚 EduTrack Öğrenci Takip Sistemi</span>
+            </div>
+            <div class="report-footer-right">
+                <span>🤖 Google Gemini AI ile oluşturulmuştur</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+@media print {
+    .sidebar, .topbar, .report-header-bar, .flash-container { display: none !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; }
+    .page-content { padding: 0 !important; }
+    .report-container {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    body { background: white !important; }
+}
+</style>
+{% endblock %}

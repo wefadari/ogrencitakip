@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Öğrenci Listesi - Öğrenci Takip Sistemi{% endblock %}
+{% block topbar_title %}👨‍🎓 Öğrenci Listesi{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Öğrenci Listesi</h1>
+        <p class="page-subtitle">Tüm öğrencilerinizi buradan yönetin</p>
+    </div>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary" id="list-add-student">
+        ➕ Yeni Öğrenci
+    </a>
+</div>
+
+<!-- Arama ve Filtre -->
+<div class="filter-bar">
+    <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Öğrenci ara..." class="search-input" oninput="filterStudents()">
+    </div>
+    <div class="filter-group">
+        <label class="filter-label">Seviye:</label>
+        <select id="levelFilter" class="filter-select" onchange="filterStudents()">
+            <option value="">Tümü</option>
+            {% for key, level in levels.items() %}
+            <option value="{{ key }}">{{ level.icon }} {{ level.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if students %}
+<!-- İstatistik Özeti -->
+<div class="list-stats">
+    {% for key, level in levels.items() %}
+    <div class="list-stat-item">
+        <span class="list-stat-icon">{{ level.icon }}</span>
+        <span class="list-stat-count">{{ students | selectattr('level', 'equalto', key) | list | length }}</span>
+        <span class="list-stat-label">{{ level.label }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Öğrenci Tablosu -->
+<div class="table-card">
+    <table class="student-table" id="studentTable">
+        <thead>
+            <tr>
+                <th>Öğrenci</th>
+                <th>Seviye</th>
+                <th>Harf İlerlemesi</th>
+                <th>Okuma Hızı</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody id="studentTableBody">
+            {% for student in students %}
+            <tr class="student-row" data-name="{{ student.name.lower() }}" data-level="{{ student.level }}" id="row-{{ student.id }}">
+                <td>
+                    <div class="table-student">
+                        <div class="table-avatar" style="background: {{ student.avatar_color }};">
+                            {{ student.name[0].upper() }}
+                        </div>
+                        <div>
+                            <div class="table-name">{{ student.name }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="level-badge" style="background: {{ student.level_info.color }}20; color: {{ student.level_info.color }}; border-color: {{ student.level_info.color }}40;">
+                        {{ student.level_info.icon }} {{ student.level_info.label }}
+                    </span>
+                </td>
+                <td>
+                    <div class="table-progress">
+                        <div class="progress-bar-sm">
+                            <div class="progress-fill-sm" style="width: {{ student.letter_progress }}%; background: {{ student.level_info.color }};"></div>
+                        </div>
+                        <span class="progress-text">{{ student.letter_progress }}%</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="wpm-badge {% if student.last_wpm >= 40 %}wpm-high{% elif student.last_wpm >= 20 %}wpm-mid{% else %}wpm-low{% endif %}">
+                        {{ student.last_wpm }} k/dk
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn-icon btn-view" title="Detay" id="view-{{ student.id }}">👁️</a>
+                        <a href="{{ url_for('letter_tracking', student_id=student.id) }}" class="btn-icon btn-letters" title="Harfler" id="letters-{{ student.id }}">🔤</a>
+                        <a href="{{ url_for('reading_speed', student_id=student.id) }}" class="btn-icon btn-reading" title="Okuma" id="reading-{{ student.id }}">📖</a>
+                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn-icon btn-edit" title="Düzenle" id="edit-{{ student.id }}">✏️</a>
+                        <button onclick="confirmDelete({{ student.id }}, '{{ student.name }}')" class="btn-icon btn-delete" title="Sil" id="delete-{{ student.id }}">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Silme Onay Formu -->
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="_method" value="DELETE">
+</form>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🎒</div>
+    <h3>Henüz öğrenci eklenmemiş</h3>
+    <p>İlk öğrencinizi ekleyerek başlayın!</p>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary" id="empty-add-btn">➕ Öğrenci Ekle</a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterStudents() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const level = document.getElementById('levelFilter').value;
+    const rows = document.querySelectorAll('.student-row');
+
+    rows.forEach(row => {
+        const name = row.dataset.name;
+        const rowLevel = row.dataset.level;
+        const nameMatch = name.includes(search);
+        const levelMatch = !level || rowLevel === level;
+        row.style.display = (nameMatch && levelMatch) ? '' : 'none';
+    });
+}
+
+function confirmDelete(id, name) {
+    if (confirm(`"${name}" adlı öğrenciyi silmek istediğinizden emin misiniz?\nBu işlem geri alınamaz!`)) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/ogrenci/${id}/sil`;
+        form.method = 'POST';
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

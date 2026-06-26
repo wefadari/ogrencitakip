@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Öğrenci Takip Sistemi{% endblock %}
+{% block topbar_title %}🏠 Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+    <!-- Hoşgeldin Başlığı -->
+    <div class="welcome-banner">
+        <div class="welcome-text">
+            <h1>Merhaba, Öğretmenim! 👋</h1>
+            <p>Öğrencilerinizin gelişimini takip edin ve yapay zeka ile kişiselleştirilmiş raporlar oluşturun.</p>
+        </div>
+        <div class="welcome-illustration">🎓</div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="stats-grid">
+        <div class="stat-card stat-card-blue">
+            <div class="stat-icon">👨‍🎓</div>
+            <div class="stat-content">
+                <div class="stat-number" id="stat-total">{{ stats.total_students }}</div>
+                <div class="stat-label">Toplam Öğrenci</div>
+            </div>
+            <div class="stat-bg-icon">👨‍🎓</div>
+        </div>
+        <div class="stat-card stat-card-green">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.advanced_students }}</div>
+                <div class="stat-label">İyi & Mükemmel Seviye</div>
+            </div>
+            <div class="stat-bg-icon">🏆</div>
+        </div>
+        <div class="stat-card stat-card-purple">
+            <div class="stat-icon">📖</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.total_readings }}</div>
+                <div class="stat-label">Okuma Ölçümü</div>
+            </div>
+            <div class="stat-bg-icon">📖</div>
+        </div>
+        <div class="stat-card stat-card-orange">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.avg_wpm }}</div>
+                <div class="stat-label">Ort. Kelime/Dakika</div>
+            </div>
+            <div class="stat-bg-icon">⚡</div>
+        </div>
+    </div>
+
+    <!-- Öğrenciler Bölümü -->
+    <div class="section-header">
+        <h2 class="section-title">Öğrencilerim</h2>
+        <a href="{{ url_for('student_list') }}" class="btn btn-outline btn-sm">Tümünü Gör →</a>
+    </div>
+
+    {% if students %}
+    <div class="students-grid">
+        {% for student in students[:6] %}
+        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="student-card" id="student-card-{{ student.id }}">
+            <div class="student-avatar" style="background: {{ student.avatar_color }};">
+                {{ student.name[0].upper() }}
+            </div>
+            <div class="student-info">
+                <h3 class="student-name">{{ student.name }}</h3>
+                <div class="student-level">
+                    <span class="level-badge" style="background: {{ student.level_info.color }}20; color: {{ student.level_info.color }}; border-color: {{ student.level_info.color }}40;">
+                        {{ student.level_info.icon }} {{ student.level_info.label }}
+                    </span>
+                </div>
+                <div class="student-progress-row">
+                    <span class="progress-label">Harf: %{{ student.letter_progress }}</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ student.letter_progress }}%; background: {{ student.level_info.color }};"></div>
+                    </div>
+                </div>
+                <div class="student-wpm">
+                    <span class="wpm-icon">📖</span>
+                    <span>{{ student.last_wpm }} kelime/dk</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if students|length > 6 %}
+    <div class="text-center mt-4">
+        <a href="{{ url_for('student_list') }}" class="btn btn-outline">
+            Diğer {{ students|length - 6 }} öğrenciyi gör →
+        </a>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Boş durum -->
+    <div class="empty-state">
+        <div class="empty-icon">🎒</div>
+        <h3>Henüz öğrenci eklenmemiş</h3>
+        <p>İlk öğrencinizi ekleyerek başlayın!</p>
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary" id="empty-add-student">
+            ➕ İlk Öğrenciyi Ekle
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Hızlı Aksiyon Kartları -->
+    <div class="section-header mt-8">
+        <h2 class="section-title">Hızlı İşlemler</h2>
+    </div>
+
+    <div class="quick-actions-grid">
+        <a href="{{ url_for('add_student') }}" class="quick-action-card" id="quick-add">
+            <div class="qa-icon">➕</div>
+            <div class="qa-title">Öğrenci Ekle</div>
+            <div class="qa-desc">Yeni öğrenci kaydı oluştur</div>
+        </a>
+        <a href="{{ url_for('student_list') }}" class="quick-action-card" id="quick-list">
+            <div class="qa-icon">📋</div>
+            <div class="qa-title">Öğrenci Listesi</div>
+            <div class="qa-desc">Tüm öğrencileri görüntüle</div>
+        </a>
+        <div class="quick-action-card" id="quick-info">
+            <div class="qa-icon">🤖</div>
+            <div class="qa-title">Yapay Zeka Raporu</div>
+            <div class="qa-desc">Öğrenci profili üzerinden rapor oluştur</div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

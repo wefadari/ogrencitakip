@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} - Harf Takibi{% endblock %}
+{% block topbar_title %}🔤 Harf Takibi - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="letter-page">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">🔤 Harf Takibi</h1>
+            <p class="page-subtitle">
+                <span class="student-chip" style="background: {{ student.avatar_color }}20; border-color: {{ student.avatar_color }}40;">
+                    <span class="chip-avatar" style="background: {{ student.avatar_color }};">{{ student.name[0].upper() }}</span>
+                    {{ student.name }}
+                </span>
+            </p>
+        </div>
+        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline" id="back-to-detail">← Geri</a>
+    </div>
+
+    <!-- Durum Açıklaması -->
+    <div class="legend-bar">
+        <div class="legend-item-bar learned">
+            <span class="legend-icon">✅</span> Öğrenildi
+        </div>
+        <div class="legend-item-bar partial">
+            <span class="legend-icon">⚠️</span> Kısmen Öğrenildi
+        </div>
+        <div class="legend-item-bar not_learned">
+            <span class="legend-icon">❌</span> Öğrenilmedi
+        </div>
+    </div>
+
+    <!-- Hızlı Seçim -->
+    <div class="quick-select-bar">
+        <button type="button" class="btn btn-sm btn-outline" onclick="selectAll('learned')" id="select-all-learned">✅ Tümünü Öğrenildi Yap</button>
+        <button type="button" class="btn btn-sm btn-outline" onclick="selectAll('not_learned')" id="select-all-reset">❌ Tümünü Sıfırla</button>
+        <div class="progress-mini-bar">
+            <div id="progressLabel">İlerleme: <strong id="progressCount">0</strong>/29</div>
+        </div>
+    </div>
+
+    <form method="POST" id="letterForm">
+        <!-- Sesli Harfler -->
+        <div class="letter-group-section">
+            <h2 class="letter-group-title">
+                <span class="group-badge vowel-badge">🔊 Sesli Harfler</span>
+                <span class="group-sub">({{ vowels | length }} harf)</span>
+            </h2>
+            <div class="letter-grid">
+                {% for lt in letters if lt.is_vowel %}
+                <div class="letter-card-wrap">
+                    <div class="letter-card {{ lt.status }}" id="card-{{ lt.letter }}" onclick="cycleLetter('{{ lt.letter }}')">
+                        <div class="letter-char">{{ lt.letter }}</div>
+                        <div class="letter-lower">{{ lt.letter.lower() }}</div>
+                        <div class="letter-status-icon" id="icon-{{ lt.letter }}">
+                            {% if lt.status == 'learned' %}✅
+                            {% elif lt.status == 'partial' %}⚠️
+                            {% else %}❌{% endif %}
+                        </div>
+                    </div>
+                    <input type="hidden" name="letter_{{ lt.letter }}" id="input-{{ lt.letter }}" value="{{ lt.status }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sessiz Harfler -->
+        <div class="letter-group-section">
+            <h2 class="letter-group-title">
+                <span class="group-badge consonant-badge">🔇 Sessiz Harfler</span>
+                <span class="group-sub">({{ consonants | length }} harf)</span>
+            </h2>
+            <div class="letter-grid">
+                {% for lt in letters if not lt.is_vowel %}
+                <div class="letter-card-wrap">
+                    <div class="letter-card {{ lt.status }}" id="card-{{ lt.letter }}" onclick="cycleLetter('{{ lt.letter }}')">
+                        <div class="letter-char">{{ lt.letter }}</div>
+                        <div class="letter-lower">{{ lt.letter.lower() }}</div>
+                        <div class="letter-status-icon" id="icon-{{ lt.letter }}">
+                            {% if lt.status == 'learned' %}✅
+                            {% elif lt.status == 'partial' %}⚠️
+                            {% else %}❌{% endif %}
+                        </div>
+                    </div>
+                    <input type="hidden" name="letter_{{ lt.letter }}" id="input-{{ lt.letter }}" value="{{ lt.status }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Kaydet Butonu -->
+        <div class="form-actions sticky-actions">
+            <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline" id="cancel-letters">İptal</a>
+            <button type="submit" class="btn btn-primary btn-lg" id="save-letters-btn">
+                💾 Harfleri Kaydet
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const statusCycle = ['not_learned', 'learned', 'partial'];
+const statusIcons = {
+    'learned': '✅',
+    'partial': '⚠️',
+    'not_learned': '❌'
+};
+
+function cycleLetter(letter) {
+    const input = document.getElementById(`input-${letter}`);
+    const card = document.getElementById(`card-${letter}`);
+    const icon = document.getElementById(`icon-${letter}`);
+
+    const currentStatus = input.value;
+    const currentIndex = statusCycle.indexOf(currentStatus);
+    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+
+    input.value = nextStatus;
+    card.className = `letter-card ${nextStatus}`;
+    icon.textContent = statusIcons[nextStatus];
+
+    updateProgress();
+
+    // AJAX ile anlık kaydet
+    fetch('/api/harf-guncelle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            student_id: {{ student.id }},
+            letter: letter,
+            status: nextStatus
+        })
+    }).catch(err => console.error('Harf güncelleme hatası:', err));
+}
+
+function selectAll(status) {
+    {% for lt in letters %}
+    const input{{ loop.index }} = document.getElementById('input-{{ lt.letter }}');
+    const card{{ loop.index }} = document.getElementById('card-{{ lt.letter }}');
+    const icon{{ loop.index }} = document.getElementById('icon-{{ lt.letter }}');
+    input{{ loop.index }}.value = status;
+    card{{ loop.index }}.className = `letter-card ${status}`;
+    icon{{ loop.index }}.textContent = statusIcons[status];
+    {% endfor %}
+    updateProgress();
+}
+
+function updateProgress() {
+    const learned = document.querySelectorAll('.letter-card.learned').length;
+    const partial = document.querySelectorAll('.letter-card.partial').length;
+    document.getElementById('progressCount').textContent = `${learned} (+ ${partial} kısmen)`;
+}
+
+updateProgress();
+</script>
+{% endblock %}
